@@ -1,5 +1,187 @@
 <html>
-  <body>
-    Hello World!
-  </body>
+  <head>
+    <title>Runeterra Cards Completion</title>
+    <meta charset="UTF-8">
+    
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+
+    <script src="./runeterra.js"></script>
+    <script>     
+      async function getCardsLib() {
+        let lib = JSON.parse(localStorage.getItem("cards-lib"));
+        
+        if (!lib) {      
+          const resp = await fetch("https://app.mobalytics.gg/api-lor/v2/cards/library?from=0&count=10000");
+          const data = await resp.json();
+          lib = data.cards.filter(c => c.isCollectible === true);
+          localStorage.setItem("cards-lib", JSON.stringify(lib));
+        }
+
+        document.getElementById("total-cards").textContent = lib.length * 3;
+        document.getElementById("calc-btn").removeAttribute("disabled")
+        
+        return lib;
+      }
+      
+      function clearCache() {
+        localStorage.removeItem("cards-lib")
+      }
+
+      async function calculate() {
+        const MY_SHARDS = document.getElementById("shards").value;
+        const MY_WILD_COMMON = document.getElementById("wCommon").value;
+        const MY_WILD_RARE = document.getElementById("wRare").value;
+        const MY_WILD_EPIC = document.getElementById("wEpic").value;
+        const MY_WILD_CHAMP = document.getElementById("wChamp").value;
+        const CODE = document.getElementById("code").value;
+
+        const myCards = runeterra.DeckEncoder.decode(CODE);
+        const cardsLib = await getCardsLib();
+
+        
+        let allCards = cardsLib.map((c1) => {
+          const myCard = myCards.find(c2 => c1.id === c2.code);
+
+          return {
+            id: c1.id,
+            title: c1.title.trim(),
+            rarity: c1.rarity,
+            missing: 3 - (myCard ? myCard.count : 0),
+          }
+        })
+
+        const sum = (a, b) =>  a + b.missing;
+
+        const commonCards = allCards.filter(c => c.rarity === "COMMON" && c.missing > 0).reduce(sum, 0);
+        const rareCards = allCards.filter(c => c.rarity === "RARE" && c.missing > 0).reduce(sum, 0);
+        const epicCards = allCards.filter(c => c.rarity === "EPIC" && c.missing > 0).reduce(sum, 0);
+        const championCards = allCards.filter(c => c.rarity === "CHAMPION" && c.missing > 0).reduce(sum, 0);
+
+        const dCommon = commonCards - MY_WILD_COMMON;
+        const dRare = rareCards - MY_WILD_RARE;
+        const dEpic = epicCards - MY_WILD_EPIC;
+        const dChamp = championCards - MY_WILD_CHAMP;
+        const dShards = dCommon * 100 + dRare * 300 + dEpic * 1200 + dChamp * 3000 - MY_SHARDS;
+
+        const PAD = 20;
+
+        document.getElementById("rCommon").textContent = dCommon;
+        document.getElementById("rRare").textContent = dRare;
+        document.getElementById("rEpic").textContent = dEpic;
+        document.getElementById("rChamp").textContent = dChamp;
+        document.getElementById("rShards").textContent = dShards.toLocaleString('en-US');
+      }
+
+      function remember(e) {
+        localStorage.setItem(e.target.id, e.target.value)
+      }
+          
+      document.addEventListener("DOMContentLoaded", async function(event) { 
+        await getCardsLib();
+      
+        const inputs = Array.from(document.getElementsByTagName("input"));
+        inputs.forEach(input => {
+          input.addEventListener("keyup", remember);
+          
+          if (localStorage.getItem(input.id)) {
+            input.value = localStorage.getItem(input.id);
+          }
+        });      
+      });
+    </script>
+    
+    <style>
+      .container {
+        width: 500px;
+        margin: 10px auto 0;
+      }
+      
+      .wild-cards {
+        display: flex;
+      }
+      
+      
+      .wild-cards input {
+        margin-right: 5px;
+      }
+      
+      .wild-cards input:last-child {
+        margin-right: 0;
+      }
+      
+      .button-small {
+        font-size: .8rem;
+        height: 2.8rem;
+        line-height: 2.8rem;
+        padding: 0 1.5rem;
+      }
+      
+      .tools {
+        margin-top: 3em;
+      }
+      
+      .lib-info {
+        margin-bottom: 1em;
+      }
+    </style>
+  </head>
+	
+	<body>
+    <div class="container">
+      <div class="lib-info">
+        <strong>Total Cards:</strong>
+        <span id="total-cards">--</span>
+      </div>
+      
+      <form id="cards-form" onsubmit="calculate(); return false;">
+        <fieldset>
+          <input type="text" placeholder="Code" id="code" value="">
+
+          <div class="wild-cards">
+            <input type="text" placeholder="Shards" id="shards" value="">
+            <input type="text" placeholder="Common" id="wCommon" value="">
+            <input type="text" placeholder="Rare" id="wRare" value="">
+            <input type="text" placeholder="Epic" id="wEpic" value="">
+            <input type="text" placeholder="Champion" id="wChamp" value="">
+          </div>
+          
+
+          <input id="calc-btn" class="button-primary" type="submit" value="Calculate" disabled>
+        </fieldset>
+      </form>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Common</th>
+            <th>Rare</th>
+            <th>Epic</th>
+            <th>Champion</th>
+          </tr>
+        </thead>
+        
+        <tbody>
+          <tr>
+            <td id="rCommon">--</td>
+            <td id="rRare">--</td>
+            <td id="rEpic">--</td>
+            <td id="rChamp">--</td>
+          </tr>
+          
+          
+          <tr>
+            <td colspan="4">
+              In Shards: <span id="rShards">--<span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div class="tools float-right">
+        <button  class="button button-outline button-small" onclick="clearCache();">Clear Cache</button>
+      </div>
+    </div>
+	</body>
 </html>
