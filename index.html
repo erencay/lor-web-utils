@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
 
     <script src="./runeterra.js"></script>
-    <script>     
+    <script>
       async function getCardsLib() {
         let lib = JSON.parse(localStorage.getItem("cards-lib"));
         
@@ -142,6 +142,15 @@
         font-size: .8em;
         vertical-align: center;
       }
+      
+      #code-href {
+        display: block;
+        margin-bottom: 10px;
+        margin-top: -5px;
+        font-size: .8em;
+        text-align: right;
+        text-decoration: underline;
+      }
     </style>
   </head>
 	
@@ -155,6 +164,8 @@
       <form onsubmit="calculate(); return false;">
         <fieldset>
           <input type="text" placeholder="Code" id="code" value="">
+          
+          <a id="code-href" target="_blank" href="https://app.mobalytics.gg/api-lor/v2/riot/cards">Click here to get your code</a>
 
           <div class="wild-cards">
             <input type="text" placeholder="Shards" id="shards" value="">
