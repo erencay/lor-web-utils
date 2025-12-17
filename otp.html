@@ -1,0 +1,85 @@
+<html>
+	<head>
+	    <meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		
+
+		
+		<link rel="stylesheet" href="https://cdn.datatables.net/2.3.5/css/dataTables.dataTables.css" />
+
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script> 
+		<script src="https://cdn.datatables.net/2.3.5/js/dataTables.js"></script>
+</head>
+
+<body class="bg-black text-white">
+	<input id="min" value="2800" />
+	
+	<table id="table"></table>
+</body>
+
+<script>
+	async function getData() {
+	  const url = "https://api-hc.metatft.com/tft-comps-api/onetricks";
+	  try {
+		const response = await fetch(url);
+		if (!response.ok) {
+		  throw new Error(`Response status: ${response.status}`);
+		}
+
+		const result = await response.json();
+		return result;
+	  } catch (error) {
+		alert(error.message);
+	  }
+	}
+	
+	async function run() {
+		const data = await getData();
+		const players = data.results.players.slice(0, 100);
+		
+		const minEl = document.getElementById("min");
+		const min = parseInt(minEl.value, 10);
+			
+		const tData = players.map(p => {
+			const comp = p.top_comp.units.map(c => `<img width='24' height='20' src="https://cdn.metatft.com/file/metatft/champions/${c.toLowerCase()}.png" />`).join(" ");
+
+			return {
+				name: `<a href='https://www.metatft.com/player/${p.summoner_info.summoner_region}/${p.summoner_info.riot_id.replace('#', '-')}' target='_blank'>${p.summoner_info.riot_id}</a>`,
+				server: p.summoner_info.summoner_region,
+				points: p.summoner_info.rating_numeric,
+				change: p.summoner_info.rating_change,
+				comp: p.top_comp.units.map(c => `<img width='32' height='28' src="https://cdn.metatft.com/file/metatft/champions/${c.toLowerCase()}.png" />`).join(" "),
+			}
+		});
+		
+		console.log(tData)
+		const table = $('#table').DataTable( {
+				data: tData,
+				columns: [
+					{ title: "Oyuncu", data: 'name' },
+					{ title: "Değişim", data: 'change' },
+					{ title: "Puan", data: 'points' },
+					{ title: "Comp", data: 'comp', width: "40%" },
+				],
+				pageLength: 100,
+				order: [[1, "desc"]]
+		});
+		
+		table.search.fixed('range', function (searchStr, data, index) {
+			var min = parseInt(minEl.value, 10);
+			var points = parseFloat(data.points) || 0;
+			console.log(data)
+			
+			return points > min;
+		});
+
+		minEl.addEventListener('input', function () {
+			table.draw();
+		});
+		
+		table.draw();
+	}
+	
+	run();
+</script>
+</html>
