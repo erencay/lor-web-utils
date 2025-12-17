@@ -35,7 +35,7 @@
 	
 	async function run() {
 		const data = await getData();
-		const players = data.results.players.slice(0, 100);
+		const players = data.results.players;
 		
 		const minEl = document.getElementById("min");
 		const min = parseInt(minEl.value, 10);
@@ -83,3 +83,4 @@
 	run();
 </script>
 </html>
+
